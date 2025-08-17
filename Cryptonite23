@@ -78,7 +78,7 @@ spawn(function()
         if not valid then
             Rayfield:Notify({Title="Crypted", Content="Key deactivated or expired: " .. reason, Duration=5})
             local plr = game.Players.LocalPlayer
-            if plr and plr:FindFirstChildOfClass("PlayerGui") then
+            if plr and plr.Kick then
                 plr:Kick("Your key is no longer valid: " .. reason)
             end
             break
@@ -88,7 +88,7 @@ spawn(function()
 end)
 
 -- ===== Script Hub GUI (only opens after key is valid) =====
-if keyValid then
+local function openHub()
     -- ===== Noclip Setup =====
     local noclipEnabled = false
     game:GetService("RunService").Stepped:Connect(function()
@@ -243,3 +243,8 @@ if keyValid then
     })
 
     Rayfield:Notify({Title="Crypted", Content="Loaded successfully for all compatible executors!", Duration=3})
+end
+
+-- Only open hub after key is valid
+spawn(function()
+    while not keyValid
