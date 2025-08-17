@@ -14,7 +14,7 @@ local userKey = nil
 local api_url = "https://4d134053-d8be-4aab-889b-f11854f96418-00-3oo8ukgi3bqua.riker.replit.dev/check"
 
 local function checkKey(key)
-    local http = syn and syn.request or http_request or request
+    local http = request or (syn and syn.request) or http_request
     if not http then
         Rayfield:Notify({Title="Crypted", Content="No supported HTTP request function found.", Duration=5})
         return false, "No HTTP"
@@ -247,4 +247,6 @@ end
 
 -- Only open hub after key is valid
 spawn(function()
-    while not keyValid
+    while not keyValid do wait(0.1) end
+    openHub()
+end)
