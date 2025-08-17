@@ -56,7 +56,7 @@ local function showKeyPrompt()
             if checkKey(key) then
                 keyValid = true
                 Rayfield:Notify({Title="Crypted", Content="Key valid! Loading script...", Duration=3})
-                Window:Destroy()
+                Window:Destroy() -- This will close the Key Entry window and remove the tab
             end
         end
     })
