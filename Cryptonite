@@ -1,0 +1,223 @@
+-- Crypted (By FNTMistik)
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+end)
+
+if not success then
+    warn("Rayfield failed to load. Executor may not support it.")
+    return
+end
+
+-- ===== Key System GUI =====
+local keyValid = false
+local api_url = "https://4d134053-d8be-4aab-889b-f11854f96418-00-3oo8ukgi3bqua.riker.replit.dev/check"
+
+local function checkKey(key)
+    local http = syn and syn.request or http_request or request
+    if not http then
+        Rayfield:Notify({Title="Crypted", Content="No supported HTTP request function found.", Duration=5})
+        return false
+    end
+    local ok, response = pcall(function()
+        return http({
+            Url = api_url,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = '{"key":"' .. key .. '"}'
+        })
+    end)
+    if not ok or not response or not response.Body then
+        Rayfield:Notify({Title="Crypted", Content="API request failed.", Duration=5})
+        return false
+    end
+    local result = game:GetService("HttpService"):JSONDecode(response.Body)
+    if result.valid then
+        return true
+    else
+        Rayfield:Notify({Title="Crypted", Content="Key invalid: " .. (result.reason or "Unknown reason"), Duration=5})
+        return false
+    end
+end
+
+local function showKeyPrompt()
+    local Window = Rayfield:CreateWindow({
+        Name = "Crypted Key System",
+        LoadingTitle = "Crypted",
+        LoadingSubtitle = "Enter your key to continue",
+        ConfigurationSaving = {Enabled = false},
+        KeySystem = false
+    })
+    local Tab = Window:CreateTab("Key Entry")
+    Tab:CreateInput({
+        Name = "Enter Key",
+        PlaceholderText = "Paste your key here...",
+        NumberOnly = false,
+        Callback = function(key)
+            if checkKey(key) then
+                keyValid = true
+                Rayfield:Notify({Title="Crypted", Content="Key valid! Loading script...", Duration=3})
+                Window:Destroy()
+            end
+        end
+    })
+    while not keyValid do
+        wait(1)
+    end
+end
+
+showKeyPrompt()
+
+-- ===== Noclip Setup =====
+local noclipEnabled = false
+game:GetService("RunService").Stepped:Connect(function()
+    if noclipEnabled and game.Players.LocalPlayer.Character then
+        for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- ===== Mobile Aimbot Setup =====
+local function runAimbot()
+    local ok, res = pcall(function()
+        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Aimbot-Mobile-34677", true))()
+    end)
+    if not ok then warn("Mobile Aimbot failed to load.") end
+end
+
+-- ===== Fly GUI V3 Setup =====
+local function runFlyGUI()
+    local ok, res = pcall(function()
+        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Gui-Fly-v3-37111", true))()
+    end)
+    if not ok then warn("Fly GUI V3 failed to load.") end
+end
+
+-- ===== Anti-Kick & Anti-Ban Toggle =====
+local antiKickEnabled = false
+local function toggleAntiKick(state)
+    antiKickEnabled = state
+    if antiKickEnabled then
+        local mt = getrawmetatable(game)
+        setreadonly(mt,false)
+        local old = mt.__namecall
+        mt.__namecall = newcclosure(function(self,...)
+            local method = getnamecallmethod()
+            if tostring(self) == "Kick" or tostring(self) == "Ban" then
+                return
+            end
+            return old(self,...)
+        end)
+        setreadonly(mt,true)
+    end
+end
+
+-- ===== GUI Setup =====
+local Window = Rayfield:CreateWindow({
+    Name = "Crypted",
+    LoadingTitle = "Crypted",
+    LoadingSubtitle = "Rayfield Build",
+    ConfigurationSaving = {Enabled = true, FolderName = "CryptedHubRayfield", FileName = "MainConfig"},
+    KeySystem = false
+})
+
+-- ===== Main Tab =====
+local MainTab = Window:CreateTab("Main")
+
+-- ✅ ESP First
+MainTab:CreateButton({
+    Name = "Enable ESP",
+    Callback = function()
+        local success, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Lucasfin000/SpaceHub/main/UESP"))()
+        end)
+        Rayfield:Notify({
+            Title = "Crypted",
+            Content = success and "ESP loaded successfully!" or "Failed to load ESP.",
+            Duration = 3
+        })
+    end
+})
+
+-- ✅ Mobile Aimbot Second
+MainTab:CreateButton({Name="Mobile Aimbot", Callback=runAimbot})
+
+-- ✅ Noclip Third
+MainTab:CreateToggle({Name="Noclip", CurrentValue=false, Flag="Noclip_Toggle", Callback=function(s) noclipEnabled=s end})
+
+-- ✅ Fly GUI Fourth
+MainTab:CreateButton({Name="Fly GUI V3", Callback=runFlyGUI})
+
+-- ✅ Anti-Kick Last
+MainTab:CreateToggle({Name="Anti-Kick & Ban (might not work in some games)", CurrentValue=false, Flag="AntiKick_Toggle", Callback=toggleAntiKick})
+
+-- ===== Teleport to Players =====
+MainTab:CreateSection("Teleport to Players")
+local TeleportFolder = Instance.new("Folder")
+
+local function refreshTeleportButtons()
+    for _, btn in ipairs(TeleportFolder:GetChildren()) do
+        btn:Destroy()
+    end
+    for _, plr in pairs(game.Players:GetPlayers()) do
+        if plr ~= game.Players.LocalPlayer then
+            local newBtn = MainTab:CreateButton({
+                Name = plr.DisplayName,
+                Callback = function()
+                    local lp = game.Players.LocalPlayer
+                    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+                    and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                        lp.Character.HumanoidRootPart.CFrame =
+                            plr.Character.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
+                        Rayfield:Notify({
+                            Title="Crypted",
+                            Content="Teleported to "..plr.DisplayName,
+                            Duration=3
+                        })
+                    end
+                end
+            })
+            newBtn.Parent = TeleportFolder
+        end
+    end
+end
+
+game.Players.PlayerAdded:Connect(refreshTeleportButtons)
+game.Players.PlayerRemoving:Connect(refreshTeleportButtons)
+refreshTeleportButtons()
+
+MainTab:CreateKeybind({Name="Toggle UI", CurrentKeybind="RightShift", HoldToInteract=false, Flag="UIToggleKey", Callback=function() Rayfield:Toggle() end})
+
+-- ===== Misc Tab =====
+local MiscTab = Window:CreateTab("Misc")
+local speedInput = 16
+local jumpInput = 50
+MiscTab:CreateInput({Name="Speed", PlaceholderText="16", NumberOnly=true, Callback=function(v) speedInput = tonumber(v) or 16 end})
+MiscTab:CreateInput({Name="Jump Power", PlaceholderText="50", NumberOnly=true, Callback=function(v) jumpInput = tonumber(v) or 50 end})
+MiscTab:CreateButton({Name="Apply", Callback=function()
+    local plr = game.Players.LocalPlayer
+    if plr and plr.Character and plr.Character:FindFirstChildOfClass("Humanoid") then
+        local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+        hum.WalkSpeed = speedInput
+        hum.JumpPower = jumpInput
+        Rayfield:Notify({Title="Crypted", Content="Speed and Jump Power applied!", Duration=3})
+    end
+end})
+
+-- ===== Discord Tab =====
+local DiscordTab = Window:CreateTab("Discord")
+DiscordTab:CreateButton({
+    Name="Copy Discord Link",
+    Callback=function()
+        if setclipboard then
+            setclipboard("https://discord.gg/kye39tU9aw")
+            Rayfield:Notify({Title="Crypted", Content="Discord link copied!", Duration=3})
+        else
+            Rayfield:Notify({Title="Crypted", Content="Executor does not support clipboard.", Duration=3})
+        end
+    end
+})
+
+Rayfield:Notify({Title="Crypted", Content="Loaded successfully for all compatible executors!", Duration=3})
