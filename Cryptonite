@@ -10,13 +10,14 @@ end
 
 -- ===== Key System GUI =====
 local keyValid = false
+local userKey = nil
 local api_url = "https://4d134053-d8be-4aab-889b-f11854f96418-00-3oo8ukgi3bqua.riker.replit.dev/check"
 
 local function checkKey(key)
     local http = syn and syn.request or http_request or request
     if not http then
         Rayfield:Notify({Title="Crypted", Content="No supported HTTP request function found.", Duration=5})
-        return false
+        return false, "No HTTP"
     end
     local ok, response = pcall(function()
         return http({
@@ -28,14 +29,13 @@ local function checkKey(key)
     end)
     if not ok or not response or not response.Body then
         Rayfield:Notify({Title="Crypted", Content="API request failed.", Duration=5})
-        return false
+        return false, "API error"
     end
     local result = game:GetService("HttpService"):JSONDecode(response.Body)
     if result.valid then
         return true
     else
-        Rayfield:Notify({Title="Crypted", Content="Key invalid: " .. (result.reason or "Unknown reason"), Duration=5})
-        return false
+        return false, result.reason or "Unknown reason"
     end
 end
 
@@ -53,10 +53,14 @@ local function showKeyPrompt()
         PlaceholderText = "Paste your key here...",
         NumberOnly = false,
         Callback = function(key)
-            if checkKey(key) then
+            local valid, reason = checkKey(key)
+            if valid then
                 keyValid = true
+                userKey = key
                 Rayfield:Notify({Title="Crypted", Content="Key valid! Loading script...", Duration=3})
-                Window:Destroy() -- This will close the Key Entry window and remove the tab
+                Window:Destroy()
+            else
+                Rayfield:Notify({Title="Crypted", Content="Key invalid: " .. reason, Duration=5})
             end
         end
     })
@@ -66,6 +70,22 @@ local function showKeyPrompt()
 end
 
 showKeyPrompt()
+
+-- ===== Key Status Checker (every 0.1 seconds) =====
+spawn(function()
+    while keyValid and userKey do
+        local valid, reason = checkKey(userKey)
+        if not valid then
+            Rayfield:Notify({Title="Crypted", Content="Key deactivated or expired: " .. reason, Duration=5})
+            local plr = game.Players.LocalPlayer
+            if plr and plr:FindFirstChildOfClass("PlayerGui") then
+                plr:Kick("Your key is no longer valid: " .. reason)
+            end
+            break
+        end
+        wait(0.1)
+    end
+end)
 
 -- ===== Script Hub GUI (only opens after key is valid) =====
 if keyValid then
@@ -223,4 +243,3 @@ if keyValid then
     })
 
     Rayfield:Notify({Title="Crypted", Content="Loaded successfully for all compatible executors!", Duration=3})
-end
